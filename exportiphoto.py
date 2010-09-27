@@ -20,8 +20,42 @@ try:
 except ImportError:
     pyexiv2 = None
 
+try:
+    import Image
+except ImportError:
+    Image = None
+    
 class iPhotoLibraryError(Exception):
     pass
+
+class Converter(object):
+    """ Image copier that shrinks large image to a given size."""
+    reportinterval = 500
+    
+    def __init__(self, hsz, vsz, quality=85):
+        self.hsz = hsz
+        self.vsz = vsz
+        self.quality = quality
+       
+    def __call__(self, fn, fn2):
+        """ Scale down the image, or copy if it is small enough."""
+        try:
+            im = Image.open(fn)
+        except IOError:
+            raise IOError("Error while converting %s" % fn)
+            raise
+        else:
+            # Determine scale such that the target is never smaller than either the specified
+            # hsz or the specified vsz.
+            w, h = im.size
+            scale = min(w/float(self.hsz), h/float(self.vsz))
+            if scale > 1.0:
+                im.resize((int(w/scale), int(h/scale)), Image.ANTIALIAS)
+            # Write the output file
+            im.save(fn2, quality=self.quality)
+            # Make sure it has the same date/time as the original
+            statinfo = os.stat(fn)
+            os.utime(fn2, (statinfo.st_atime, statinfo.st_mtime))
 
 class iPhotoLibrary(object):
     def __init__(self, albumDir, use_album=False, quiet=False):
@@ -275,7 +309,7 @@ class iPhotoLibrary(object):
                 self.status("-")
                 return
 
-        shutil.copy2(mFilePath, tFilePath)
+        copyFunc(mFilePath, tFilePath)
         md_written = False
         if writeMD:
             md_written = self.writePhotoMD(imageId, tFilePath, tagFaces)
@@ -354,7 +388,11 @@ if __name__ == '__main__':
         test=False, 
         albums=False, 
         metadata=False,
-        faces=False
+        faces=False,
+        resize=False,
+        width=1280,
+        height=1024,
+        quality=85,
     )
 
     option_parser.add_option("-a", "--albums",
@@ -373,6 +411,24 @@ if __name__ == '__main__':
                                  help="store faces as keywords (requires -m)"
         )
 
+    if Image:
+        option_parser.add_option("-r", "--resize",
+                                 action="store_true", dest="resize",
+                                 help="resize images"
+        )
+        option_parser.add_option("-x", "--width",
+                                 action="store", type="int", dest="width",
+                                 help="target width (pixels) when resizing images"
+        )
+        option_parser.add_option("-y", "--height",
+                                 action="store", type="int", dest="height",
+                                 help="target height (pixels) when resizing images"
+        )
+        option_parser.add_option("-q", "--quality",
+                                 action="store", type="int", dest="quality",
+                                 help="JPG quality (5-95) when resizing images"
+        )
+    
     (options, args) = option_parser.parse_args()
     
     if len(args) != 2:
@@ -380,6 +436,12 @@ if __name__ == '__main__':
             "Please specify an iPhoto library and a destination."
         )
 
+    # How to copy the files
+    if options.resize:
+        copyFunc = Converter(options.width, options.height, options.quality)
+    else:
+        copyFunc = shutil.copy2
+    
     try:
         library = iPhotoLibrary(args[0], use_album=options.albums)
         def copyImage(imageId, folderName, folderDate):
