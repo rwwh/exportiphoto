@@ -237,7 +237,16 @@ class iPhotoLibrary(object):
                 'month': folderDate.month,
                 'day': folderDate.day
             }
+
+            # Unfortunately the date used by iPhoto is depending on the locale.
+            # It is therefore difficult to recognize folders that are only a date.
+            #
+            # TODO?: iPhoto seems to append _2, _3 for multiple imports in one day?
+            # TODO?: Should these have a $ at the end?
+            #
             if re.match("[A-Z][a-z]{2} [0-9]{1,2}, [0-9]{4}", folderName):
+                outputPath = date
+            elif re.match("[0-9]{1,2} [a-z]{3} [12][0-9]{3}", folderName):
                 outputPath = date
             else:
                 outputPath = date + " " + folderName
