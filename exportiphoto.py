@@ -50,7 +50,7 @@ class Converter(object):
             w, h = im.size
             scale = min(w/float(self.hsz), h/float(self.vsz))
             if scale > 1.0:
-                im.resize((int(w/scale), int(h/scale)), Image.ANTIALIAS)
+                im = im.resize((int(w/scale), int(h/scale)), Image.ANTIALIAS)
             # Write the output file
             im.save(fn2, quality=self.quality)
             # Make sure it has the same date/time as the original
