@@ -131,7 +131,7 @@ Installing PIL
 --------------
 If you have macports, run this:
 
-   > sudo port install py26-pil
+    > sudo port install py26-pil
 
 Note that you'll have to use python2.6 to run the script; e.g.,
 
