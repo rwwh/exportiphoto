@@ -129,5 +129,12 @@ using the "-q"/"--quality" option. Default value is 85, usable values are betwee
 
 Installing PIL
 --------------
-If you have macports, run "sudo port install py26-pil"
+If you have macports, run this:
+
+   > sudo port install py26-pil
+
+Note that you'll have to use python2.6 to run the script; e.g.,
+
+    > python2.6 exportiphoto ...
+
 
